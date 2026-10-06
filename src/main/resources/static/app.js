@@ -13,6 +13,8 @@
   var DEFAULT_PRESET_DAYS = 30;
   var LATE_LIMIT = 20;
   var SVG_NS = 'http://www.w3.org/2000/svg';
+  var THEME_KEY = 'ops-dashboard-theme';
+  var DEFAULT_THEME = 'dark';
 
   // ---------- API client ----------
 
@@ -102,6 +104,15 @@
     return Math.round((parseIso(iso) - parseIso(today)) / 86400000);
   }
 
+  /** The stored theme if it is a known one, else dark. The OS setting is deliberately ignored. */
+  function resolveTheme(stored) {
+    return stored === 'light' || stored === 'dark' ? stored : DEFAULT_THEME;
+  }
+
+  function nextTheme(theme) {
+    return theme === 'dark' ? 'light' : 'dark';
+  }
+
   // ---------- App ----------
 
   function initApp(document, fetchImpl) {
@@ -122,7 +133,8 @@
       chartOnTime: document.getElementById('chart-on-time'),
       chartTickets: document.getElementById('chart-tickets'),
       lateBody: document.getElementById('late-body'),
-      vendors: document.getElementById('vendors-list')
+      vendors: document.getElementById('vendors-list'),
+      themeToggle: document.getElementById('theme-toggle')
     };
 
     var state = {
@@ -136,7 +148,8 @@
       tickets: [],
       vendors: [],
       error: null,
-      vendorsError: null
+      vendorsError: null,
+      theme: DEFAULT_THEME
     };
 
     function svgEl(name, attrs, text) {
@@ -169,6 +182,41 @@
 
     function setKpi(el, value) {
       el.querySelector('.kpi-value').textContent = value;
+    }
+
+    // ---------- Theme ----------
+
+    // Storage can be unavailable (privacy modes, blocked site data): fall back to the default.
+    function readStoredTheme() {
+      try {
+        return document.defaultView.localStorage.getItem(THEME_KEY);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function storeTheme(theme) {
+      try {
+        document.defaultView.localStorage.setItem(THEME_KEY, theme);
+      } catch (e) {
+        // Not persisted; the theme still applies for this visit.
+      }
+    }
+
+    /**
+     * Colours come from the CSS variables for this data-theme. The button's label names the
+     * theme a click switches to, so it carries no aria-pressed state (that would contradict it).
+     */
+    function applyTheme(theme) {
+      state.theme = theme;
+      document.documentElement.setAttribute('data-theme', theme);
+      els.themeToggle.textContent = theme === 'dark' ? 'Light theme' : 'Dark theme';
+    }
+
+    function toggleTheme() {
+      var theme = nextTheme(state.theme);
+      applyTheme(theme);
+      storeTheme(theme);
     }
 
     // ---------- Rendering ----------
@@ -345,6 +393,11 @@
       });
     });
 
+    els.themeToggle.addEventListener('click', toggleTheme);
+
+    // Before the first request, so the theme is right even when the API is down.
+    applyTheme(resolveTheme(readStoredTheme()));
+
     var ready = api.health().then(function (health) {
       state.today = health.today;
       var range = applyPreset(DEFAULT_PRESET_DAYS, state.today);
@@ -359,6 +412,7 @@
       state: state,
       load: load,
       selectPreset: selectPreset,
+      toggleTheme: toggleTheme,
       api: api
     };
   }
@@ -372,7 +426,9 @@
     formatMoney: formatMoney,
     barWidths: barWidths,
     applyPreset: applyPreset,
-    daysUntil: daysUntil
+    daysUntil: daysUntil,
+    resolveTheme: resolveTheme,
+    nextTheme: nextTheme
   };
 
   if (typeof module !== 'undefined') {
