@@ -27,6 +27,10 @@ and label colours of the two SVG charts.
   in the dark theme.
 - **AC-3** The choice is persisted in `localStorage` and restored on load, so a
   refresh keeps the theme the user picked.
+- **AC-4** With nothing stored, the dashboard loads in the **dark** theme. The OS
+  `prefers-color-scheme` setting is ignored, both in JavaScript and in CSS. A test
+  covers it: with an empty `localStorage` and `matchMedia` reporting a light OS
+  preference, `<html>` ends up with `data-theme="dark"`.
 
 Fences:
 
@@ -36,7 +40,8 @@ Fences:
 
 ## Open questions
 
-- Default theme when nothing is stored: light, dark, or follow the OS setting?
+None. Decided: default is dark when nothing is stored, and the OS setting is
+ignored (see AC-4).
 
 ## Definition of done
 
