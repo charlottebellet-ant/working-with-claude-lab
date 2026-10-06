@@ -122,7 +122,8 @@
       chartOnTime: document.getElementById('chart-on-time'),
       chartTickets: document.getElementById('chart-tickets'),
       lateBody: document.getElementById('late-body'),
-      vendors: document.getElementById('vendors-list')
+      vendors: document.getElementById('vendors-list'),
+      themeToggle: document.getElementById('theme-toggle')
     };
 
     var state = {
@@ -138,6 +139,35 @@
       error: null,
       vendorsError: null
     };
+
+    // ---------- Theme ----------
+
+    var THEME_KEY = 'theme';
+    var DEFAULT_THEME = 'dark'; // the OS colour-scheme setting is deliberately ignored
+
+    function readStoredTheme() {
+      try {
+        var stored = root.localStorage.getItem(THEME_KEY);
+        return stored === 'light' || stored === 'dark' ? stored : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      els.themeToggle.textContent = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
+    }
+
+    function toggleTheme() {
+      var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      try {
+        root.localStorage.setItem(THEME_KEY, next);
+      } catch (e) {
+        // storage unavailable: the choice just lasts for this page view
+      }
+    }
 
     function svgEl(name, attrs, text) {
       var el = document.createElementNS(SVG_NS, name);
@@ -338,6 +368,9 @@
       state.preset = null;
       load(els.from.value, els.to.value);
     });
+
+    applyTheme(readStoredTheme() || DEFAULT_THEME);
+    els.themeToggle.addEventListener('click', toggleTheme);
 
     els.presets.forEach(function (p) {
       p.button.addEventListener('click', function () {

@@ -36,7 +36,8 @@ const REGISTERED_IDS = [
   'chart-tickets',
   'late-table',
   'late-body',
-  'vendors-list'
+  'vendors-list',
+  'theme-toggle'
 ];
 
 const TODAY = '2026-09-21';
@@ -157,11 +158,18 @@ function createFakeApi(overrides) {
 /**
  * Load the page and start the app against a fake API. `overrides` replaces any of the
  * fixtures by name (health, kpis, onTime, late, ticketsByCategory, vendors, failing).
+ * `storedTheme` presets localStorage['theme'] before the app starts.
  * Returns { app, api, document, module } once the initial load has finished.
  */
 async function loadApp(overrides) {
   const html = readIndexHtml();
   const bodyMatch = html.match(/<body>([\s\S]*)<\/body>/);
+  // Fresh page state: no stored theme, and no data-theme so the app has to set it itself.
+  window.localStorage.clear();
+  if (overrides && overrides.storedTheme !== undefined) {
+    window.localStorage.setItem('theme', overrides.storedTheme);
+  }
+  document.documentElement.removeAttribute('data-theme');
   document.body.innerHTML = bodyMatch[1].replace(/<script[^>]*><\/script>/g, '');
 
   const api = createFakeApi(overrides);
