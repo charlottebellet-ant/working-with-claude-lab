@@ -1,10 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Marlowe &amp; Finch Operations</title>
   <link rel="stylesheet" href="style.css">
+  <!-- Restore the stored theme before the first paint, so a light choice does not flash dark. app.js owns the toggle. -->
+  <script>
+    try {
+      var storedTheme = localStorage.getItem('ops-theme');
+      if (storedTheme === 'light' || storedTheme === 'dark') {
+        document.documentElement.setAttribute('data-theme', storedTheme);
+      }
+    } catch (err) {}
+  </script>
 </head>
 <body>
   <div class="app">
@@ -24,6 +33,8 @@
           <button id="preset-90" class="preset" type="button">90 days</button>
         </div>
       </form>
+
+      <button id="theme-toggle" class="theme-toggle" type="button">Light theme</button>
     </header>
 
     <main>
