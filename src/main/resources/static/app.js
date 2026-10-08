@@ -12,6 +12,8 @@
   var API = '/api';
   var DEFAULT_PRESET_DAYS = 30;
   var LATE_LIMIT = 20;
+  var THEME_KEY = 'theme';
+  var DEFAULT_THEME = 'dark';
   var SVG_NS = 'http://www.w3.org/2000/svg';
 
   // ---------- API client ----------
@@ -122,8 +124,44 @@
       chartOnTime: document.getElementById('chart-on-time'),
       chartTickets: document.getElementById('chart-tickets'),
       lateBody: document.getElementById('late-body'),
-      vendors: document.getElementById('vendors-list')
+      vendors: document.getElementById('vendors-list'),
+      themeToggle: document.getElementById('theme-toggle')
     };
+
+    // ---------- Theme ----------
+    // Dark is the default (TODO-231 AC-4); the OS setting is deliberately ignored.
+    // The colours live in style.css, keyed on <html data-theme>.
+
+    var storage = null;
+    try {
+      storage = document.defaultView.localStorage;
+    } catch (e) { /* storage blocked: the theme just won't persist */ }
+
+    function storedTheme() {
+      try {
+        var value = storage && storage.getItem(THEME_KEY);
+        return value === 'light' || value === 'dark' ? value : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      els.themeToggle.textContent = theme === 'dark' ? 'Light theme' : 'Dark theme';
+    }
+
+    applyTheme(storedTheme() || DEFAULT_THEME);
+
+    els.themeToggle.addEventListener('click', function () {
+      var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      try {
+        if (storage) {
+          storage.setItem(THEME_KEY, next);
+        }
+      } catch (e) { /* ignore: the choice still holds for this session */ }
+    });
 
     var state = {
       today: null,
