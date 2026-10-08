@@ -27,16 +27,15 @@ and label colours of the two SVG charts.
   in the dark theme.
 - **AC-3** The choice is persisted in `localStorage` and restored on load, so a
   refresh keeps the theme the user picked.
+- **AC-4** The default theme is **dark**. When nothing valid is stored, the page
+  opens in the dark theme, whatever the operating system's light/dark setting is
+  (`prefers-color-scheme` is ignored). A stored choice still wins over the default.
 
 Fences:
 
 - Both test suites stay green (`./mvnw test` and `npm test`).
 - Frontend only: no Java changes.
 - No new dependencies (no npm packages, no Maven dependencies).
-
-## Open questions
-
-- Default theme when nothing is stored: light, dark, or follow the OS setting?
 
 ## Definition of done
 

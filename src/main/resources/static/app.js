@@ -13,6 +13,10 @@
   var DEFAULT_PRESET_DAYS = 30;
   var LATE_LIMIT = 20;
   var SVG_NS = 'http://www.w3.org/2000/svg';
+  var THEME_KEY = 'ops-theme';
+  var THEMES = ['dark', 'light'];
+  // Dark unless the user picked otherwise. The OS light/dark setting is ignored on purpose.
+  var DEFAULT_THEME = 'dark';
 
   // ---------- API client ----------
 
@@ -112,6 +116,7 @@
       form: document.getElementById('range-form'),
       from: document.getElementById('range-from'),
       to: document.getElementById('range-to'),
+      themeToggle: document.getElementById('theme-toggle'),
       presets: [7, 30, 90].map(function (days) {
         return { days: days, button: document.getElementById('preset-' + days) };
       }),
@@ -126,6 +131,7 @@
     };
 
     var state = {
+      theme: DEFAULT_THEME,
       today: null,
       from: null,
       to: null,
@@ -165,6 +171,35 @@
     function renderStatus() {
       var message = state.error || state.vendorsError;
       setStatus(message || '', Boolean(message));
+    }
+
+    // ---------- Theme ----------
+
+    /** The stored theme if it is a known one, else the default. Storage may be blocked. */
+    function readStoredTheme() {
+      try {
+        var stored = document.defaultView.localStorage.getItem(THEME_KEY);
+        return THEMES.indexOf(stored) !== -1 ? stored : DEFAULT_THEME;
+      } catch (e) {
+        return DEFAULT_THEME;
+      }
+    }
+
+    function storeTheme(theme) {
+      try {
+        document.defaultView.localStorage.setItem(THEME_KEY, theme);
+      } catch (e) {
+        // Not persisted (private mode, quota, blocked); the theme still applies for this visit.
+      }
+    }
+
+    /** data-theme on <html> drives the CSS variables; the button names the theme you get next. */
+    function applyTheme(theme) {
+      state.theme = theme;
+      document.documentElement.setAttribute('data-theme', theme);
+      var next = theme === 'dark' ? 'Light' : 'Dark';
+      els.themeToggle.textContent = next + ' theme';
+      els.themeToggle.setAttribute('aria-label', 'Switch to ' + next.toLowerCase() + ' theme');
     }
 
     function setKpi(el, value) {
@@ -332,6 +367,14 @@
       var range = applyPreset(days, state.today);
       return load(range.from, range.to);
     }
+
+    applyTheme(readStoredTheme());
+
+    els.themeToggle.addEventListener('click', function () {
+      var next = state.theme === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      storeTheme(next);
+    });
 
     els.form.addEventListener('submit', function (event) {
       event.preventDefault();
