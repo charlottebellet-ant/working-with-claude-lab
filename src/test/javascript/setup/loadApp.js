@@ -36,7 +36,8 @@ const REGISTERED_IDS = [
   'chart-tickets',
   'late-table',
   'late-body',
-  'vendors-list'
+  'vendors-list',
+  'theme-toggle'
 ];
 
 const TODAY = '2026-09-21';
@@ -157,12 +158,21 @@ function createFakeApi(overrides) {
 /**
  * Load the page and start the app against a fake API. `overrides` replaces any of the
  * fixtures by name (health, kpis, onTime, late, ticketsByCategory, vendors, failing).
+ * `options.storage` seeds localStorage (e.g. { theme: 'light' }) before the app starts;
+ * every call first clears localStorage and <html data-theme>, which the page loader below
+ * (body only) would otherwise leak from one test to the next.
  * Returns { app, api, document, module } once the initial load has finished.
  */
-async function loadApp(overrides) {
+async function loadApp(overrides, options) {
   const html = readIndexHtml();
   const bodyMatch = html.match(/<body>([\s\S]*)<\/body>/);
   document.body.innerHTML = bodyMatch[1].replace(/<script[^>]*><\/script>/g, '');
+
+  window.localStorage.clear();
+  document.documentElement.removeAttribute('data-theme');
+  Object.entries((options && options.storage) || {}).forEach(([key, value]) => {
+    window.localStorage.setItem(key, value);
+  });
 
   const api = createFakeApi(overrides);
   global.fetch = api.fetchImpl;
