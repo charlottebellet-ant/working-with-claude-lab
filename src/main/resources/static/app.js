@@ -13,6 +13,8 @@
   var DEFAULT_PRESET_DAYS = 30;
   var LATE_LIMIT = 20;
   var SVG_NS = 'http://www.w3.org/2000/svg';
+  var THEME_KEY = 'ops-theme';
+  var DEFAULT_THEME = 'dark';
 
   // ---------- API client ----------
 
@@ -102,6 +104,11 @@
     return Math.round((parseIso(iso) - parseIso(today)) / 86400000);
   }
 
+  /** The other theme: "dark" becomes "light", anything else becomes "dark". */
+  function nextTheme(theme) {
+    return theme === 'dark' ? 'light' : 'dark';
+  }
+
   // ---------- App ----------
 
   function initApp(document, fetchImpl) {
@@ -122,10 +129,12 @@
       chartOnTime: document.getElementById('chart-on-time'),
       chartTickets: document.getElementById('chart-tickets'),
       lateBody: document.getElementById('late-body'),
-      vendors: document.getElementById('vendors-list')
+      vendors: document.getElementById('vendors-list'),
+      themeToggle: document.getElementById('theme-toggle')
     };
 
     var state = {
+      theme: DEFAULT_THEME,
       today: null,
       from: null,
       to: null,
@@ -287,6 +296,38 @@
       });
     }
 
+    // ---------- Theme ----------
+
+    /** The stored theme, or the default when nothing valid is stored or storage is blocked. */
+    function readStoredTheme() {
+      try {
+        var stored = document.defaultView.localStorage.getItem(THEME_KEY);
+        return stored === 'light' || stored === 'dark' ? stored : DEFAULT_THEME;
+      } catch (err) {
+        return DEFAULT_THEME;
+      }
+    }
+
+    function storeTheme(theme) {
+      try {
+        document.defaultView.localStorage.setItem(THEME_KEY, theme);
+      } catch (err) {
+        // Storage blocked: the theme still applies, it just is not remembered.
+      }
+    }
+
+    /** Colours come from CSS variables keyed on data-theme; the button names the other theme. */
+    function applyTheme(theme) {
+      state.theme = theme;
+      document.documentElement.setAttribute('data-theme', theme);
+      els.themeToggle.textContent = nextTheme(theme) === 'dark' ? 'Dark theme' : 'Light theme';
+    }
+
+    function toggleTheme() {
+      applyTheme(nextTheme(state.theme));
+      storeTheme(state.theme);
+    }
+
     // ---------- Loading ----------
 
     function load(from, to) {
@@ -345,6 +386,9 @@
       });
     });
 
+    els.themeToggle.addEventListener('click', toggleTheme);
+    applyTheme(readStoredTheme());
+
     var ready = api.health().then(function (health) {
       state.today = health.today;
       var range = applyPreset(DEFAULT_PRESET_DAYS, state.today);
@@ -359,6 +403,7 @@
       state: state,
       load: load,
       selectPreset: selectPreset,
+      toggleTheme: toggleTheme,
       api: api
     };
   }
@@ -372,7 +417,8 @@
     formatMoney: formatMoney,
     barWidths: barWidths,
     applyPreset: applyPreset,
-    daysUntil: daysUntil
+    daysUntil: daysUntil,
+    nextTheme: nextTheme
   };
 
   if (typeof module !== 'undefined') {
