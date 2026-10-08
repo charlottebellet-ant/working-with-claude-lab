@@ -13,6 +13,8 @@
   var DEFAULT_PRESET_DAYS = 30;
   var LATE_LIMIT = 20;
   var SVG_NS = 'http://www.w3.org/2000/svg';
+  var THEME_KEY = 'ops-theme';
+  var DEFAULT_THEME = 'dark';
 
   // ---------- API client ----------
 
@@ -102,10 +104,61 @@
     return Math.round((parseIso(iso) - parseIso(today)) / 86400000);
   }
 
+  // ---------- Theme ----------
+
+  /**
+   * Light/dark theme. Colours live in style.css as CSS variables keyed on
+   * <html data-theme>; this only flips the attribute and remembers the choice.
+   * Dark is the default and the OS setting is deliberately ignored.
+   */
+  function createTheme(document) {
+    var html = document.documentElement;
+    var toggle = document.getElementById('theme-toggle');
+    var storage = document.defaultView && document.defaultView.localStorage;
+
+    function stored() {
+      try {
+        var value = storage && storage.getItem(THEME_KEY);
+        return value === 'light' || value === 'dark' ? value : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function apply(theme) {
+      var next = theme === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', theme);
+      toggle.textContent = next === 'light' ? '☀ Light' : '☾ Dark';
+      toggle.setAttribute('aria-label', 'Switch to ' + next + ' theme');
+    }
+
+    function current() {
+      return html.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    }
+
+    function toggleTheme() {
+      var theme = current() === 'dark' ? 'light' : 'dark';
+      apply(theme);
+      try {
+        if (storage) {
+          storage.setItem(THEME_KEY, theme);
+        }
+      } catch (e) {
+        // Storage unavailable (private mode, quota): the theme still switches for this visit.
+      }
+      return theme;
+    }
+
+    apply(stored() || DEFAULT_THEME);
+    toggle.addEventListener('click', toggleTheme);
+    return { current: current, toggle: toggleTheme };
+  }
+
   // ---------- App ----------
 
   function initApp(document, fetchImpl) {
     var api = createApi(fetchImpl);
+    var theme = createTheme(document);
 
     var els = {
       status: document.getElementById('status-line'),
@@ -359,6 +412,7 @@
       state: state,
       load: load,
       selectPreset: selectPreset,
+      theme: theme,
       api: api
     };
   }
